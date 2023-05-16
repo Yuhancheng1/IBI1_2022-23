@@ -13,6 +13,9 @@ name_list = []
 defstr_list = []
 child_count_list = []
 
+# Dictionary to store the child counts for each term
+child_counts = {}
+
 # Iterate over each term element
 for term_element in term_elements:
     # Get the ID, name, and defstr values
@@ -26,9 +29,6 @@ for term_element in term_elements:
     defstr_element = def_element.getElementsByTagName('defstr')[0]
     defstr_value = defstr_element.firstChild.data
 
-    # Count the number of is_a child elements
-    child_count = len(term_element.getElementsByTagName('is_a'))
-
     # Check if defstr contains 'autophagosome'
     match_autophagosome = re.search('autophagosome', defstr_value)
 
@@ -37,11 +37,29 @@ for term_element in term_elements:
         id_list.append(id_value)
         name_list.append(name_value)
         defstr_list.append(defstr_value)
-        child_count_list.append(str(child_count))
-        data.append([id_value, name_value, defstr_value, child_count])
+
+    # Store the child count for the current term
+    child_counts[id_value] = 0
+
+# Iterate over each term element again to count the child nodes
+for term_element in term_elements:
+    is_a_elements = term_element.getElementsByTagName('is_a')
+
+    if is_a_elements:
+        # Iterate over each is_a element
+        for is_a_element in is_a_elements:
+            # Get the parent term ID
+            parent_id = is_a_element.firstChild.data.strip().split(' ! ')[0]
+
+            # Increment the child count for the parent term
+            child_counts[parent_id] = child_counts.get(parent_id, 0) + 1
+
+# Add child counts to the child_count_list
+for id_value in id_list:
+    child_count_list.append(str(child_counts[id_value]))
 
 # Create a DataFrame from the collected data
-df = pd.DataFrame(data, columns=['ID', 'Name', 'Defstr', 'Child Count'])
+df = pd.DataFrame({'ID': id_list, 'Name': name_list, 'Defstr': defstr_list, 'Child Count': child_count_list})
 
 # Convert the lists to comma-separated strings
 id_str = ",".join(id_list)
